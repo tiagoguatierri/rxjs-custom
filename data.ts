@@ -9,7 +9,7 @@ export const people: Person[] = [
   {
     id: '1',
     name: 'Bruna Lara',
-    email: 'bruna.laara22@gmail.com',
+    email: 'bruna.lara@gmail.com',
     age: 30,
   },
   {
@@ -27,7 +27,7 @@ export const people: Person[] = [
   {
     id: '4',
     name: 'Tiago Guatierri',
-    email: 'tiagovit@gmail.com',
+    email: 'tiago.guatierri@gmail.com',
     age: 32,
   },
   {
