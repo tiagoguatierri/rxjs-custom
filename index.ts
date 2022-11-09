@@ -13,10 +13,10 @@ import { people, Person } from './data';
 const data$ = of<Person[]>(people);
 const initialData$ = data$.pipe(map((data) => data.slice(0, 5)));
 
-type Fn = <T>(...args: any[]) => unknown;
+type Fn = (...args: any[]) => any;
 
 function filterArray<T>(
-  query?: Record<string, unknown> | Fn,
+  query?: Record<keyof T, unknown> | Fn,
   inputMapFn?: Fn,
   outputMapFn?: Fn
 ) {
