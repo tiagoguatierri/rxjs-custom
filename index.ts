@@ -2,9 +2,7 @@ import {
   Observable,
   iif,
   of,
-  BehaviorSubject,
   combineLatest,
-  ObservableInput,
   fromEvent,
   distinctUntilChanged,
   startWith,
@@ -20,8 +18,7 @@ type Fn = <T>(...args: any[]) => unknown;
 function filterArray<T>(
   query?: Record<string, unknown> | Fn,
   inputMapFn?: Fn,
-  outputMapFn?: Fn,
-  defaultData?: ObservableInput<any>
+  outputMapFn?: Fn
 ) {
   function handler(token: string) {
     const _handler = {
@@ -77,12 +74,9 @@ function filterArray<T>(
           : items;
         return [data, filtered];
       }),
-      mergeMap(([data, items]) => {
-        const defaultData$ = (defaultData ||
-          of([data, items])) as Observable<any>;
-        return iif(() => !!items.length, of([data, items]), defaultData$);
-      }),
-      map(([data, items]) => (outputMapFn ? outputMapFn(data, items) : items))
+      map(
+        ([data, items]) => (outputMapFn ? outputMapFn(data, items) : items) as T
+      )
     );
 }
 
@@ -101,13 +95,13 @@ const input = fromEvent(document.querySelector('#inputSearch'), 'input').pipe(
   startWith('')
 );
 
-combineLatest([input, initialData$])
+combineLatest([input, data$])
   .pipe(
     filterArray(
       ([name]) => ({ name }),
       ([, items]) => items,
-      (data, filtered) => data,
-      data$
-    )
+      (data, filtered) => filtered
+    ),
+    mergeMap((items) => iif(() => !!items.length, of(items), data$))
   )
-  .subscribe(console.log);
+  .subscribe(write);
