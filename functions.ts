@@ -19,14 +19,12 @@ export function filterArray<T>(
     const _handler = {
       default: (...args: any[]) => {
         const [item, key, val] = args;
-        try {
-          return eval(item[key] + token + val);
-        } catch (e) {
-          return item;
-        }
+
+        return eval(item[key] + token + val);
       },
       '^': (...args: any[]) => {
         const [item, key, val] = args;
+
         return normalize(item[key]).startsWith(normalize(val));
       },
       '*': (...args: any[]) => {
@@ -69,7 +67,11 @@ export function filterArray<T>(
               for (const [key, value] of Object.entries<any>(queryParams)) {
                 const [val, token] = parametrize(value);
                 // console.log(key, token, val);
-                return val ? handler(token)(item, key, val) : items;
+                try {
+                  return val ? handler(token)(item, key, val) : items;
+                } catch (e) {
+                  return items;
+                }
               }
             })
           : items;
