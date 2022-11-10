@@ -19,7 +19,11 @@ export function filterArray<T>(
     const _handler = {
       default: (...args: any[]) => {
         const [item, key, val] = args;
-        return eval(item[key] + token + val);
+        try {
+          return eval(item[key] + token + val);
+        } catch (e) {
+          return item;
+        }
       },
       '^': (...args: any[]) => {
         const [item, key, val] = args;
@@ -64,7 +68,7 @@ export function filterArray<T>(
           ? items.filter((item: T) => {
               for (const [key, value] of Object.entries<any>(queryParams)) {
                 const [val, token] = parametrize(value);
-                //console.log(key, token, val);
+                // console.log(key, token, val);
                 return val ? handler(token)(item, key, val) : items;
               }
             })

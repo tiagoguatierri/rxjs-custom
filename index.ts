@@ -83,18 +83,24 @@ const handler = () => {
 
   const params$ = combineLatest([field$, token$, term$]).pipe(
     distinctUntilChanged(),
-    debounceTime(500)
+    debounceTime(500),
+    map(([field, token, term]) => {
+      if (field && token) {
+        inputTerm.disabled = false;
+      }
+      return [field, token + term];
+    })
   );
 
-  /*   combineLatest([search$, data$])
+  combineLatest([params$, data$])
     .pipe(
-      filterArray(
-        ([name]) => ({ name }),
+       filterArray(
+        ([[field, term]]) => ({ [field]: term }),
         ([, items]) => items,
         (data, filtered) => filtered
-      )
+      ) 
     )
-    .subscribe(write); */
+    .subscribe(write);
 };
 
 addOptionsToSelect(inputField, fields);
