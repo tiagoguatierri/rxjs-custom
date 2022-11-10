@@ -1,3 +1,43 @@
-<input type="search" id="inputSearch" placeholder="Pesquisar" />
-<input type="text" id="inputToken" placeholder="Token" value="*" />
-<div id="app"></div>
+<div class="row p-5">
+  <div class="col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <form>
+          <div class="mb-3">
+            <label for="inputField" class="form-label">Campo</label>
+            <select
+              id="inputField"
+              class="form-select"
+              aria-label="Default select example"
+            >
+              <option selected disabled>Carregando...</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="inputToken" class="form-label">Tipo de busca</label>
+            <select
+              id="inputToken"
+              class="form-select"
+              aria-label="Default select example"
+            >
+              <option selected disabled>Carregando...</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="inputTerm" class="form-label">Termo</label>
+            <input
+              type="search"
+              class="form-control"
+              id="inputTerm"
+              placeholder="Pesquisar"
+              disabled
+            />
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="p-5">
+  <pre id="view"></pre>
+</div>

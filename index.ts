@@ -1,130 +1,102 @@
-import {
-  Observable,
-  iif,
-  of,
-  combineLatest,
-  fromEvent,
-  distinctUntilChanged,
-  startWith,
-  merge,
-  concat,
-  race,
-} from 'rxjs';
-import { map, mergeMap, debounceTime } from 'rxjs/operators';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 import { people, Person } from './data';
+import {
+  combineLatest,
+  distinctUntilChanged,
+  fromEvent,
+  map,
+  of,
+  startWith,
+} from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
+import { filterArray } from './functions';
 
 const data$ = of<Person[]>(people);
-const initialData$ = data$.pipe(map((data) => data.slice(0, 5)));
 
-type Fn = (...args: any[]) => any;
+const fields = [
+  { value: 'id', text: 'ID' },
+  { value: 'name', text: 'Nome' },
+  { value: 'email', text: 'Email' },
+  { value: 'age', text: 'Idade' },
+];
 
-/**
- *
- * @param query
- * @param inputMapFn
- * @param outputMapFn
- * @returns
- */
-export function filterArray<T>(
-  query?: Record<string, unknown> | Fn,
-  inputMapFn?: Fn,
-  outputMapFn?: Fn
-) {
-  function handler(token: string) {
-    const _handler = {
-      default: (...args: any[]) => {
-        const [item, key, val] = args;
-        return eval(item[key] + token + val);
-      },
-      '^': (...args: any[]) => {
-        const [item, key, val] = args;
-        return normalize(item[key]).startsWith(normalize(val));
-      },
-      '*': (...args: any[]) => {
-        const [item, key, val] = args;
-        return normalize(item[key]).includes(normalize(val));
-      },
-    };
+const tokens = [
+  { value: '*', text: 'Qualquer ocorrência' },
+  { value: '^', text: 'Que inicia com:' },
+  { value: '==', text: 'Igual à:' },
+  { value: '!=', text: 'Diferente de:' },
+  { value: '>', text: 'Maior que:' },
+  { value: '>=', text: 'Maior ou igual à:' },
+  { value: '<', text: 'Menor que:' },
+  { value: '<=', text: 'Menor ou igual à:' },
+];
 
-    const key = token in _handler ? token : 'default';
-    console.log(key);
-    return _handler[key];
+const inputField = document.querySelector('#inputField') as HTMLSelectElement;
+const inputToken = document.querySelector('#inputToken') as HTMLSelectElement;
+const inputTerm = document.querySelector('#inputTerm') as HTMLInputElement;
+
+const addOptionsToSelect = (
+  el: HTMLSelectElement,
+  data: Array<{ text: string; value: string }>
+) => {
+  for (const { text, value } of data) {
+    const opt = document.createElement('option');
+    opt.text = text;
+    opt.value = value;
+    el.add(opt);
+  }
+  const opt = document.createElement('option');
+  opt.text = 'Selecione uma opção';
+  opt.value = null;
+  el.remove(0);
+  el.add(opt, 0);
+  el.selectedIndex = 0;
+};
+
+const handler = () => {
+  function write(ctx: any) {
+    document.querySelector('#view').innerHTML = `<pre>${JSON.stringify(
+      ctx,
+      null,
+      2
+    )}</pre>`;
   }
 
-  function normalize(value: string) {
-    return value
-      ? value
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLocaleLowerCase()
-      : '';
-  }
+  const field$ = fromEvent(inputField, 'change').pipe(
+    map((evt: Event) => evt.target as HTMLSelectElement),
+    map((el) => el.value),
+    startWith('')
+  );
 
-  function parametrize(input: unknown) {
-    const value = input.toString();
-    const pattern = /^[\^|\*|>|<|>=|<=|=|!=]{1,2}/i;
-    const matcher = value.match(pattern);
-    const cleanValue = value.replace(pattern, '');
-    const token = matcher?.[0] || '==';
-    return [cleanValue, token];
-  }
+  const token$ = fromEvent(inputToken, 'change').pipe(
+    map((evt: Event) => evt.target as HTMLSelectElement),
+    map((el) => el.value),
+    startWith('')
+  );
 
-  return (source: Observable<T>) =>
-    source.pipe(
-      map((data) => {
-        const items = (inputMapFn ? inputMapFn(data) : data) as T[];
-        const queryParams =
-          query && typeof query === 'function' ? query(data) : query;
-        const doFilter = items && !!Object.keys(queryParams).length;
-        const filtered = doFilter
-          ? items.filter((item: T) => {
-              for (const [key, value] of Object.entries<any>(queryParams)) {
-                const [val, token] = parametrize(value);
-                //console.log(key, token, val);
-                return val ? handler(token)(item, key, val) : items;
-              }
-            })
-          : items;
-        return [data, filtered];
-      }),
-      map(
-        ([data, items]) => (outputMapFn ? outputMapFn(data, items) : items) as T
+  const term$ = fromEvent(inputTerm, 'input').pipe(
+    map((evt: InputEvent) => evt.target as HTMLInputElement),
+    map((el) => el.value),
+    startWith('')
+  );
+
+  const params$ = combineLatest([field$, token$, term$]).pipe(
+    distinctUntilChanged(),
+    debounceTime(500)
+  );
+
+  /*   combineLatest([search$, data$])
+    .pipe(
+      filterArray(
+        ([name]) => ({ name }),
+        ([, items]) => items,
+        (data, filtered) => filtered
       )
-    );
-}
-
-function write(ctx: any) {
-  document.querySelector('#app').innerHTML = `<pre>${JSON.stringify(
-    ctx,
-    null,
-    2
-  )}</pre>`;
-}
-
-const inputSearch = document.querySelector('#inputSearch') as HTMLInputElement;
-const inputToken = document.querySelector('#inputToken') as HTMLInputElement;
-
-const inputSearch$ = fromEvent(inputSearch, 'input').pipe(
-  map((evt: InputEvent) => evt.target['value']),
-  startWith('')
-);
-const inputToken$ = fromEvent(inputToken, 'input').pipe(
-  map((evt: InputEvent) => evt.target['value']),
-  startWith('*')
-);
-
-const search$ = combineLatest([inputSearch$, inputToken$]).pipe(
-  map(([val, token]) => token + val),
-  distinctUntilChanged(),
-  debounceTime(500)
-);
-
-combineLatest([search$, data$])
-  .pipe(
-    filterArray(
-      ([name]) => ({ name }),
-      ([, items]) => items,
-      (data, filtered) => filtered
     )
-  )
-  .subscribe(write);
+    .subscribe(write); */
+};
+
+addOptionsToSelect(inputField, fields);
+addOptionsToSelect(inputToken, tokens);
+handler();
